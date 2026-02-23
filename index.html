@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema Escolar Pro</title>
+<link rel="stylesheet" href="estilo/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  background: linear-gradient(135deg,#1e3a8a,#2563eb);
+  color: white;
+  transition: 0.3s;
+}
+
+.dark {
+  background: #111;
+  color: #eee;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px 30px;
+  background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(10px);
+}
+
+.sidebar {
+  width: 200px;
+  position: fixed;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  padding-top: 20px;
+}
+
+.sidebar button {
+  display: block;
+  width: 100%;
+  padding: 15px;
+  background: none;
+  border: none;
+  color: white;
+  text-align: left;
+  cursor: pointer;
+}
+
+main {
+  margin-left: 200px;
+  padding: 30px;
+}
+
+.cards {
+  display: flex;
+  gap: 20px;
+}
+
+.card {
+  background: rgba(255,255,255,0.1);
+  padding: 20px;
+  border-radius: 15px;
+  flex: 1;
+  backdrop-filter: blur(10px);
+}
+
+.lista {
+  margin-top: 20px;
+}
+
+.lista div {
+  background: rgba(255,255,255,0.1);
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+}
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.login-box {
+  background: rgba(255,255,255,0.1);
+  padding: 40px;
+  border-radius: 20px;
+  text-align: center;
+  backdrop-filter: blur(15px);
+}
+
+.hidden {
+  display: none;
+}
+
+@media(max-width:768px){
+  .sidebar{
+    width:100px;
+  }
+  main{
+    margin-left:100px;
+  }
+}
+  </style>
+</head>
+<body>
+
+<!-- LOGIN MODERNO -->
+<section id="loginSection" class="login-container">
+  <div class="login-box">
+    <h2>🎓 Sistema Escolar</h2>
+    <input type="text" id="usuario" placeholder="Usuário">
+    <input type="password" id="senha" placeholder="Senha">
+    <button onclick="login()">Entrar</button>
+  </div>
+</section>
+
+<!-- SISTEMA -->
+<div id="sistema" class="hidden">
+
+<!-- HEADER -->
+<header>
+  <div class="logo">🎓 Gestão Escolar</div>
+  <div class="header-actions">
+    <button onclick="toggleDarkMode()">🌙</button>
+    <button onclick="logout()">Sair</button>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <button onclick="mostrarSecao('dashboard')">📊 Dashboard</button>
+  <button onclick="mostrarSecao('alunos')">👨‍🎓 Alunos</button>
+  <button onclick="mostrarSecao('professores')">👩‍🏫 Professores</button>
+  <button onclick="mostrarSecao('notas')">📝 Notas</button>
+</aside>
+
+<main>
+
+<!-- DASHBOARD -->
+<section id="dashboard" class="secao active">
+  <h2>Visão Geral</h2>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Alunos</h3>
+      <p id="totalAlunos">0</p>
+    </div>
+
+    <div class="card">
+      <h3>Média Geral</h3>
+      <p id="mediaGeral">0</p>
+    </div>
+  </div>
+
+  <canvas id="graficoNotas"></canvas>
+</section>
+
+<!-- ALUNOS -->
+<section id="alunos" class="secao">
+  <h2>Cadastro de Alunos</h2>
+  <form onsubmit="cadastrarAluno(event)">
+    <input type="text" id="nomeAluno" placeholder="Nome" required>
+    <input type="text" id="matriculaAluno" placeholder="Matrícula" required>
+    <button type="submit">Cadastrar</button>
+  </form>
+
+  <div id="listaAlunos" class="lista"></div>
+</section>
+
+<!-- PROFESSORES -->
+<section id="professores" class="secao">
+  <h2>Cadastro de Professores</h2>
+  <form onsubmit="cadastrarProfessor(event)">
+    <input type="text" id="nomeProfessor" placeholder="Nome" required>
+    <input type="text" id="disciplinaProfessor" placeholder="Disciplina" required>
+    <button type="submit">Cadastrar</button>
+  </form>
+  <div id="listaProfessores" class="lista"></div>
+</section>
+
+<!-- NOTAS -->
+<section id="notas" class="secao">
+  <h2>Lançamento de Notas</h2>
+  <form onsubmit="lancarNotas(event)">
+    <input type="text" id="alunoNota" placeholder="Nome do aluno" required>
+    <input type="number" id="nota1" placeholder="Nota 1" required>
+    <input type="number" id="nota2" placeholder="Nota 2" required>
+    <button type="submit">Salvar</button>
+  </form>
+
+  <div id="listaNotas" class="lista"></div>
+</section>
+
+</main>
+</div>
+
+<script>
+
+// =============================
+// CONTAS ADMINISTRADORAS
+// =============================
+const administradores = [
+  { usuario: "Amaral", senha: "1234" },
+  { usuario: "AnaSilva", senha: "AS2026@adm" },
+  { usuario: "RicardoLima", senha: "RL2026@adm" }
+];
+
+// =============================
+// DADOS SALVOS
+// =============================
+let alunos = JSON.parse(localStorage.getItem("alunos")) || [];
+let professores = JSON.parse(localStorage.getItem("professores")) || [];
+let notas = JSON.parse(localStorage.getItem("notas")) || [];
+
+// =============================
+// LOGIN
+// =============================
+function login(){
+  const usuario = document.getElementById("usuario").value;
+  const senha = document.getElementById("senha").value;
+
+  const adminValido = administradores.find(
+    adm => adm.usuario === usuario && adm.senha === senha
+  );
+
+  if(adminValido){
+    sessionStorage.setItem("logado", "true");
+    document.getElementById("loginSection").style.display="none";
+    document.getElementById("sistema").classList.remove("hidden");
+    inicializarSistema();
+  } else {
+    alert("❌ Usuário ou senha incorretos!");
+  }
+}
+
+function logout(){
+  sessionStorage.clear();
+  location.reload();
+}
+
+// =============================
+// INICIALIZAÇÃO
+// =============================
+function inicializarSistema(){
+  renderAlunos();
+  renderProfessores();
+  renderNotas();
+  atualizarDashboard();
+}
+
+// =============================
+// DARK MODE
+// =============================
+function toggleDarkMode(){
+  document.body.classList.toggle("dark");
+}
+
+// =============================
+// TROCAR SEÇÃO
+// =============================
+function mostrarSecao(id){
+  document.querySelectorAll(".secao").forEach(sec=>{
+    sec.style.display="none";
+  });
+  document.getElementById(id).style.display="block";
+}
+
+// =============================
+// CADASTRAR ALUNO
+// =============================
+function cadastrarAluno(e){
+  e.preventDefault();
+
+  const aluno = {
+    nome: nomeAluno.value,
+    matricula: matriculaAluno.value
+  };
+
+  alunos.push(aluno);
+  localStorage.setItem("alunos", JSON.stringify(alunos));
+
+  renderAlunos();
+  atualizarDashboard();
+  e.target.reset();
+}
+
+function renderAlunos(){
+  listaAlunos.innerHTML="";
+  alunos.forEach((a,index)=>{
+    listaAlunos.innerHTML+=`
+      <div>
+        ${a.nome} - ${a.matricula}
+        <button onclick="removerAluno(${index})">❌</button>
+      </div>
+    `;
+  });
+}
+
+function removerAluno(index){
+  alunos.splice(index,1);
+  localStorage.setItem("alunos", JSON.stringify(alunos));
+  renderAlunos();
+  atualizarDashboard();
+}
+
+// =============================
+// CADASTRAR PROFESSOR
+// =============================
+function cadastrarProfessor(e){
+  e.preventDefault();
+
+  const professor = {
+    nome: nomeProfessor.value,
+    disciplina: disciplinaProfessor.value
+  };
+
+  professores.push(professor);
+  localStorage.setItem("professores", JSON.stringify(professores));
+
+  renderProfessores();
+  e.target.reset();
+}
+
+function renderProfessores(){
+  listaProfessores.innerHTML="";
+  professores.forEach((p,index)=>{
+    listaProfessores.innerHTML+=`
+      <div>
+        ${p.nome} - ${p.disciplina}
+        <button onclick="removerProfessor(${index})">❌</button>
+      </div>
+    `;
+  });
+}
+
+function removerProfessor(index){
+  professores.splice(index,1);
+  localStorage.setItem("professores", JSON.stringify(professores));
+  renderProfessores();
+}
+
+// =============================
+// LANÇAR NOTAS
+// =============================
+function lancarNotas(e){
+  e.preventDefault();
+
+  const media = (parseFloat(nota1.value) + parseFloat(nota2.value)) / 2;
+
+  const registro = {
+    aluno: alunoNota.value,
+    media: media
+  };
+
+  notas.push(registro);
+  localStorage.setItem("notas", JSON.stringify(notas));
+
+  renderNotas();
+  atualizarDashboard();
+  e.target.reset();
+}
+
+function renderNotas(){
+  listaNotas.innerHTML="";
+  notas.forEach((n,index)=>{
+    listaNotas.innerHTML+=`
+      <div>
+        ${n.aluno} - Média: ${n.media.toFixed(1)}
+        <button onclick="removerNota(${index})">❌</button>
+      </div>
+    `;
+  });
+}
+
+function removerNota(index){
+  notas.splice(index,1);
+  localStorage.setItem("notas", JSON.stringify(notas));
+  renderNotas();
+  atualizarDashboard();
+}
+
+// =============================
+// DASHBOARD
+// =============================
+function atualizarDashboard(){
+  totalAlunos.textContent = alunos.length;
+
+  let mediaGeral = notas.length
+    ? (notas.reduce((acc,n)=>acc+n.media,0)/notas.length).toFixed(1)
+    : 0;
+
+  mediaGeral.textContent = mediaGeral;
+
+  desenharGrafico();
+}
+
+// =============================
+// GRÁFICO
+// =============================
+function desenharGrafico(){
+  const canvas = document.getElementById("graficoNotas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = 500;
+  canvas.height = 250;
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  notas.forEach((n,i)=>{
+    const altura = n.media * 10;
+    ctx.fillStyle = "#00ffcc";
+    ctx.fillRect(i*60+20, canvas.height-altura, 40, altura);
+
+    ctx.fillStyle = "white";
+    ctx.fillText(n.media.toFixed(1), i*60+30, canvas.height-altura-5);
+  });
+}
+
+</script>
+</body>
+</html>
