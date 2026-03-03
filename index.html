@@ -24,6 +24,8 @@ body{
   background:linear-gradient(135deg,#1e3a8a,#2563eb);
   color:white;
   transition:0.4s;
+  
+
 }
 
 .dark{
@@ -33,14 +35,42 @@ body{
 
 /* HEADER */
 header{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:70px;
+  background: rgb(18 35 91);
   display:flex;
-  justify-content:space-between;
   align-items:center;
-  padding:15px 25px;
-  background:rgba(0,0,0,0.3);
-  backdrop-filter:blur(10px);
+  justify-content:space-between;
+  padding:0 20px;
+  z-index:1100;
 }
+main{
+  margin-left:250px;
+  margin-top:70px; /* mesma altura do header */
+  padding:20px;
+  transition:0.3s;
+}
+@media(max-width:900px){
 
+  .sidebar{
+    left:-250px;
+  }
+
+  .sidebar.active{
+    left:0;
+  }
+
+  main{
+    margin-left:0;
+  }
+
+  .menu-toggle{
+    display:block;
+  }
+}
 .menu-toggle{
   display:none;
   font-size:22px;
@@ -54,7 +84,7 @@ header{
 .header-actions button{
   margin-left:10px;
 }
-
+ 
 /* BOTÕES */
 button{
   background:var(--primary);
@@ -192,6 +222,20 @@ input{
     display:block;
   }
 }
+.logo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:600;
+  font-size:18px;
+}
+
+.logo-img{
+  width:45px;
+  height:45px;
+  object-fit:contain;
+  border-radius:8px;
+}
 </style>
 </head>
 <body>
@@ -211,7 +255,10 @@ input{
 
 <header>
   <div class="menu-toggle" onclick="toggleMenu()">☰</div>
-  <div class="logo">🎓 Gestão Escolar</div>
+  <div class="logo">
+  <img src="imagem/logo.jpeg" alt="Logo Colégio" class="logo-img">
+  <span>Gestão Escolar</span>
+</div>
   <div class="header-actions">
     <button onclick="logout()">Sair</button>
   </div>
@@ -271,30 +318,49 @@ input{
   </form>
   <div id="listaNotas" class="lista"></div>
 </section>
+<button onclick="limparTudo()" style="background:#ef4444;margin-top:15px;">
+  🗑️ Limpar Tudo
+</button>
+<button onclick="exportarPDF()" style="margin-top:10px;">
+  📁 Exportar PDF
+</button>
 
 </main>
 </div>
 
 <div id="toast" class="toast"></div>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 const administradores = [
   { usuario: "Amaral", senha: "1234" },
   { usuario: "Sheldy Costa", senha: "2026" }
 ];
+
+const loginSection = document.getElementById("loginSection");
+const sistema = document.getElementById("sistema");
+const usuarioInput = document.getElementById("usuario");
+const senhaInput = document.getElementById("senha");
+const listaAlunos = document.getElementById("listaAlunos");
+const listaProfessores = document.getElementById("listaProfessores");
+const listaNotas = document.getElementById("listaNotas");
+const totalAlunos = document.getElementById("totalAlunos");
+const mediaGeral = document.getElementById("mediaGeral");
+
 let alunos = JSON.parse(localStorage.getItem("alunos")) || [];
 let professores = JSON.parse(localStorage.getItem("professores")) || [];
 let notas = JSON.parse(localStorage.getItem("notas")) || [];
 
-/* LOGIN */
+/* LOGIN COM SESSÃO */
 function login(){
-  const user = usuario.value;
-  const pass = senha.value;
+  const user = usuarioInput.value;
+  const pass = senhaInput.value;
 
-const valido = administradores.find(
-  a => a.usuario.toLowerCase() === user.toLowerCase() && a.senha === pass
-);
+  const valido = administradores.find(
+    a => a.usuario.toLowerCase() === user.toLowerCase() && a.senha === pass
+  );
+
   if(valido){
+    localStorage.setItem("logado", "true");
     loginSection.style.display="none";
     sistema.style.display="block";
     inicializar();
@@ -304,16 +370,22 @@ const valido = administradores.find(
 }
 
 function logout(){
+  localStorage.removeItem("logado");
   location.reload();
+}
+
+/* MANTER SESSÃO */
+window.onload = function(){
+  if(localStorage.getItem("logado") === "true"){
+    loginSection.style.display="none";
+    sistema.style.display="block";
+    inicializar();
+  }
 }
 
 /* MENU */
 function toggleMenu(){
   document.querySelector(".sidebar").classList.toggle("active");
-}
-
-function toggleDarkMode(){
-  document.body.classList.toggle("dark");
 }
 
 /* SEÇÕES */
@@ -343,7 +415,10 @@ function inicializar(){
 /* ALUNOS */
 function cadastrarAluno(e){
   e.preventDefault();
-  alunos.push({nome:nomeAluno.value,matricula:matriculaAluno.value});
+  const nome = document.getElementById("nomeAluno").value;
+  const matricula = document.getElementById("matriculaAluno").value;
+
+  alunos.push({nome, matricula});
   localStorage.setItem("alunos",JSON.stringify(alunos));
   renderAlunos();
   atualizarDashboard();
@@ -370,7 +445,10 @@ function removerAluno(i){
 /* PROFESSORES */
 function cadastrarProfessor(e){
   e.preventDefault();
-  professores.push({nome:nomeProfessor.value,disciplina:disciplinaProfessor.value});
+  const nome = document.getElementById("nomeProfessor").value;
+  const disciplina = document.getElementById("disciplinaProfessor").value;
+
+  professores.push({nome, disciplina});
   localStorage.setItem("professores",JSON.stringify(professores));
   renderProfessores();
   e.target.reset();
@@ -395,8 +473,14 @@ function removerProfessor(i){
 /* NOTAS */
 function lancarNotas(e){
   e.preventDefault();
-  const media=(+nota1.value + +nota2.value)/2;
-  notas.push({aluno:alunoNota.value,media});
+
+  const aluno = document.getElementById("alunoNota").value;
+  const nota1 = parseFloat(document.getElementById("nota1").value);
+  const nota2 = parseFloat(document.getElementById("nota2").value);
+
+  const media = (nota1 + nota2)/2;
+
+  notas.push({aluno, media});
   localStorage.setItem("notas",JSON.stringify(notas));
   renderNotas();
   atualizarDashboard();
@@ -432,27 +516,84 @@ function atualizarDashboard(){
   desenharGrafico();
 }
 
-/* GRÁFICO */
+/* GRÁFICO PROFISSIONAL */
 function desenharGrafico(){
   const canvas=document.getElementById("graficoNotas");
   const ctx=canvas.getContext("2d");
 
   canvas.width=canvas.parentElement.offsetWidth;
-  canvas.height=250;
+  canvas.height=300;
 
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
+  ctx.strokeStyle="rgba(255,255,255,0.2)";
+  for(let i=1;i<=5;i++){
+    let y = (canvas.height/5)*i;
+    ctx.beginPath();
+    ctx.moveTo(0,y);
+    ctx.lineTo(canvas.width,y);
+    ctx.stroke();
+  }
+
   notas.forEach((n,i)=>{
-    const altura=n.media*15;
-    const x=i*60+30;
+    const altura=n.media*20;
+    const x=i*70+40;
     const y=canvas.height-altura;
 
     ctx.fillStyle="#00ffcc";
-    ctx.fillRect(x,y,40,altura);
+    ctx.fillRect(x,y,50,altura);
 
     ctx.fillStyle="white";
-    ctx.fillText(n.media.toFixed(1),x+10,y-5);
+    ctx.fillText(n.media.toFixed(1),x+15,y-5);
   });
+}
+
+/* LIMPAR TUDO */
+function limparTudo(){
+  if(confirm("Tem certeza que deseja apagar todos os dados?")){
+    localStorage.removeItem("alunos");
+    localStorage.removeItem("professores");
+    localStorage.removeItem("notas");
+
+    alunos=[];
+    professores=[];
+    notas=[];
+
+    renderAlunos();
+    renderProfessores();
+    renderNotas();
+    atualizarDashboard();
+    showToast("Dados apagados!");
+  }
+}
+
+/* EXPORTAR PDF */
+function exportarPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.text("Relatório Escolar", 20, 20);
+
+  let y = 30;
+
+  doc.text("Alunos:", 20, y);
+  y+=10;
+
+  alunos.forEach(a=>{
+    doc.text(`- ${a.nome} (${a.matricula})`, 25, y);
+    y+=8;
+  });
+
+  y+=10;
+  doc.text("Notas:", 20, y);
+  y+=10;
+
+  notas.forEach(n=>{
+    doc.text(`- ${n.aluno} | Média: ${n.media.toFixed(1)}`, 25, y);
+    y+=8;
+  });
+
+  doc.save("relatorio-escolar.pdf");
 }
 </script>
 
