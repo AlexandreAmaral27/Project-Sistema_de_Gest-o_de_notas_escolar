@@ -102,25 +102,40 @@
   <div id="listaNotas" class="lista"></div>
 </section>
 <section id="diagrama" style="display:none;">
-<h2>Diagrama de Caso de Uso - Sistema de Alunos</h2>
+<h2>Diagrama UML Funcional - Sistema de Alunos</h2>
 
-<div class="uml-container">
+<div class="uml-box">
 
-<div class="ator">
-👨‍🎓<br>Aluno
+<div class="classe">
+<h3>Aluno</h3>
+<p>Total: <strong id="totalAlunosDiagrama">0</strong></p>
+<hr>
+<p>nome</p>
+<p>matricula</p>
+<p>classe</p>
+<hr>
+<p>+ cadastrar()</p>
+<p>+ remover()</p>
 </div>
 
-<div class="casos">
+<div class="relacao">
+1 ─────────── *
+<br><br>
+<span id="totalNotasDiagrama">0 notas</span>
+</div>
 
-<div class="caso">Cadastrar Aluno</div>
-<div class="caso">Visualizar Alunos</div>
-<div class="caso">Remover Aluno</div>
-<div class="caso">Lançar Notas</div>
-
+<div class="classe">
+<h3>Nota</h3>
+<p>Total: <strong id="qtdNotas">0</strong></p>
+<hr>
+<p>nota1</p>
+<p>nota2</p>
+<p>media</p>
+<hr>
+<p>+ calcularMedia()</p>
 </div>
 
 </div>
-
 </section>
 <button onclick="limparTudo()" style="background:#ef4444;margin-top:15px;">
   🗑️ Limpar Tudo
@@ -435,6 +450,23 @@ function exportarPDF(){
 
   doc.save("relatorio-escolar.pdf");
 }
+
+
+function atualizarDiagrama(){
+  document.getElementById("totalAlunosDiagrama").textContent = alunos.length;
+  document.getElementById("qtdNotas").textContent = notas.length;
+  document.getElementById("totalNotasDiagrama").textContent = notas.length + " notas";
+}
+
+
+function inicializar(){
+  renderAlunos();
+  renderProfessores();
+  renderNotas();
+  atualizarDashboard();
+  atualizarDiagrama(); // 👈 ADICIONA ISSO
+}
+atualizarDiagrama();
 </script>
 
 </body>

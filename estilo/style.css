@@ -302,3 +302,40 @@ color:white;
 text-align:center;
 width:200px;
 }
+
+  .uml-box{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:40px;
+  margin-top:20px;
+}
+
+.classe{
+  background:#1e293b;
+  padding:20px;
+  border-radius:10px;
+  width:200px;
+  color:white;
+  box-shadow:0 0 10px rgba(0,0,0,0.5);
+}
+
+.classe h3{
+  text-align:center;
+  margin-bottom:10px;
+}
+
+.relacao{
+  font-size:20px;
+  color:white;
+}
+
+.classe strong{
+  color:#00ffcc;
+}
+
+.relacao span{
+  display:block;
+  margin-top:10px;
+  color:#38bdf8;
+}
